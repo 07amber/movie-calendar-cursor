@@ -296,6 +296,54 @@
     </script>
     <script>
       const MOVIES = window.MOVIES || [];
+      const expandedDays = new Set();
+
+const renderCards = (cards, dateStr) => {
+  const filtered = cards.filter(c => {
+    const rk = regionKey(c.region);
+    if (rk === 'mainland') return showMainland();
+    if (rk === 'hk') return showHK();
+    return true;
+  });
+
+  const isExpanded = expandedDays.has(dateStr);
+
+  const cap = isExpanded ? filtered.length : 3;
+  const shown = filtered.slice(0, cap);
+  const extra = filtered.length - shown.length;
+
+  return `
+    ${shown.map(c => {
+      const rk = regionKey(c.region);
+      const tagClass = rk === 'mainland' ? 'mainland' : (rk === 'hk' ? 'hk' : '');
+      const poster = c.poster || '';
+      const titleLocal = c.title_local || c.title_en || '';
+      const titleEn = c.title_en ? c.title_en : '';
+      const link = c.link || '#';
+
+      return `
+        <div class="card">
+          <img src="${poster}" />
+          <div class="info">
+            <div class="t">
+              <a href="${link}" target="_blank">
+                <div class="title">
+                  ${escapeHtml(titleLocal)}
+                  <small>${escapeHtml(titleEn)}</small>
+                </div>
+              </a>
+              <div class="regionTag ${tagClass}">${escapeHtml(c.region || '')}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('')}
+
+    ${extra > 0 && !isExpanded 
+      ? `<div class="moreBtn" data-date="${dateStr}" style="cursor:pointer; color: rgba(255,255,255,0.65); font-size: 12px;">+ ${extra} more</div>` 
+      : ''}
+  `;
+};
 
       const regionKey = (r) => {
         if (r === 'Mainland China') return 'mainland';
@@ -412,7 +460,7 @@
                 </div>
               `;
             }).join('')}
-            ${extra > 0 ? '<div style="color: rgba(255,255,255,0.65); font-size: 12px; padding-left: 2px;">+ '+extra+' more</div>' : ''}
+            ${extra > 0 ? `<div class="moreBtn" data-date="${dateStr}" style="color: rgba(255,255,255,0.65); font-size: 12px; padding-left: 2px; cursor:pointer;">+ ${extra} more</div>` : ''}
           `;
         };
 
@@ -476,7 +524,17 @@
         if (!t || (t.id !== 'fMainland' && t.id !== 'fHK')) return;
         render();
       });
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.moreBtn');
+  if (!btn) return;
 
+  const date = btn.dataset.date;
+  expandedDays.add(date);
+
+  render();
+});
+
+render();
       render();
     </script>
   </body>
